@@ -3,6 +3,15 @@ import * as React from "react"
 import { useCollection } from "../../useCollection"
 import { db, firebase } from "../../firebase.js"
 import { Link } from "gatsby"
+import styled from "styled-components"
+import SelectOptions from "./page-2"
+const Button = styled.button`
+  display: ${props => (props.toggle ? "none" : "")};
+`
+const Container = styled.div`
+  border: 3px solid blue;
+`
+
 interface User {
   displayName: string
   photoUrl: string
@@ -15,12 +24,17 @@ interface firebaseUser {
 }
 const App: React.FC = () => {
   const user = useAuth()
+  const [bool, setBool] = React.useState(false)
 
   return user ? (
-    <div className="App">
+    <Container>
       <h1>Hello {user.displayName}</h1>
-      <Link to="page-2">Page 2</Link>
-    </div>
+      <p>Welcome to the Discplined Pursuit of Less</p>
+      <Button onClick={() => setBool(true)} toggle={bool}>
+        Get Started
+      </Button>
+      {bool && user && <SelectOptions user={user} />}
+    </Container>
   ) : (
     <Login />
   )
@@ -60,7 +74,6 @@ function useAuth() {
   React.useEffect(() => {
     // this effect allows us to persist login
     return firebase.auth().onAuthStateChanged((firebaseUser: firebaseUser) => {
-      console.log(firebaseUser)
       if (firebaseUser) {
         const user = {
           displayName: firebaseUser.displayName,
