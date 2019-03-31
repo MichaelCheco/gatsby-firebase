@@ -6,7 +6,7 @@ import { Link } from "gatsby"
 import styled from "styled-components"
 import SelectOptions from "./page-2"
 const Button = styled.button`
-  display: ${props => (props.toggle ? "none" : "")};
+  display: ${(props: { toggle: boolean }) => (props.toggle ? "none" : "")};
 `
 const Container = styled.div`
   border: 3px solid blue;
@@ -23,8 +23,26 @@ interface firebaseUser {
   uid: string
 }
 const App: React.FC = () => {
-  const user = useAuth()
+  const [user, docs] = useAuth()
   const [bool, setBool] = React.useState(false)
+  {
+    const res = docs.map(doc => doc.user.id)
+    console.log(res, "IMPORTANT")
+    const fin = res.map(x => {
+      if (x == user.uid) {
+        return true
+      } else {
+        return false
+      }
+    })
+    console.log(fin, "fin")
+    if (fin.includes(true)) return <ReturningUser />
+    // if (res[0] === user.uid) return "Hey"
+  }
+
+  function ReturningUser() {
+    return <h3>Welcome Back!</h3>
+  }
 
   return user ? (
     <Container>
@@ -69,11 +87,23 @@ function Login() {
   )
 }
 function useAuth() {
+  const [docs, setDocs] = React.useState([])
   const [user, setUser] = React.useState<User | null>(null)
 
   React.useEffect(() => {
     // this effect allows us to persist login
     return firebase.auth().onAuthStateChanged((firebaseUser: firebaseUser) => {
+      const x = db.collection(`users/${firebaseUser.uid}/values`)
+      x.onSnapshot(snapshot => {
+        const docs = []
+        snapshot.forEach(doc => {
+          docs.push({
+            ...doc.data(),
+            id: doc.id,
+          })
+        })
+        setDocs(docs)
+      })
       if (firebaseUser) {
         const user = {
           displayName: firebaseUser.displayName,
@@ -89,6 +119,6 @@ function useAuth() {
       }
     })
   }, [])
-  return user
+  return [user, docs]
 }
 export default App

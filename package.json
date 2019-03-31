@@ -6,6 +6,7 @@
   "author": "Kyle Mathews <mathews.kyle@gmail.com>",
   "dependencies": {
     "@types/node": "^11.12.0",
+    "@types/styled-components": "^4.1.12",
     "babel-plugin-styled-components": "^1.10.0",
     "firebase": "^5.9.2",
     "gatsby": "^2.3.3",
