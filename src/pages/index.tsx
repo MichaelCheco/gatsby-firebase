@@ -1,6 +1,7 @@
 import { graphql } from "gatsby"
 import * as React from "react"
 import { useCollection } from "../../useCollection"
+import { useDoc } from "../../useDoc"
 import { db, firebase } from "../../firebase.js"
 import { Link } from "gatsby"
 import styled from "styled-components"
@@ -27,21 +28,14 @@ const App: React.FC = () => {
   const [bool, setBool] = React.useState(false)
   {
     const res = docs.map(doc => doc.user.id)
-    console.log(res, "IMPORTANT")
-    const fin = res.map(x => {
-      if (x == user.uid) {
-        return true
-      } else {
-        return false
-      }
-    })
-    console.log(fin, "fin")
-    if (fin.includes(true)) return <ReturningUser />
-    // if (res[0] === user.uid) return "Hey"
+    const userId = res[0]
+    const userData = useDoc(`users/${userId}`)
+    if (userData) return <ReturningUser user={userData} />
   }
 
-  function ReturningUser() {
-    return <h3>Welcome Back!</h3>
+  function ReturningUser({ user }) {
+    console.log(user, "WOOO")
+    return <h3>Welcome Back {user.displayName}</h3>
   }
 
   return user ? (
@@ -92,32 +86,37 @@ function useAuth() {
 
   React.useEffect(() => {
     // this effect allows us to persist login
-    return firebase.auth().onAuthStateChanged((firebaseUser: firebaseUser) => {
-      const x = db.collection(`users/${firebaseUser.uid}/values`)
-      x.onSnapshot(snapshot => {
-        const docs = []
-        snapshot.forEach(doc => {
-          docs.push({
-            ...doc.data(),
-            id: doc.id,
-          })
+    if (docs) {
+      return firebase
+        .auth()
+        .onAuthStateChanged((firebaseUser: firebaseUser) => {
+          const users = db.collection(`users/${firebaseUser.uid}/values`)
+          users.onSnapshot(snapshot => {
+            const docs = []
+            snapshot.forEach(doc => {
+              docs.push({
+                ...doc.data(),
+                id: doc.id,
+              })
+            })
+            setDocs(docs)
+            console.log(docs, "DOCS")
+          }, [])
+          if (firebaseUser) {
+            const user = {
+              displayName: firebaseUser.displayName,
+              photoUrl: firebaseUser.photoURL,
+              uid: firebaseUser.uid,
+            }
+            setUser(user)
+            db.collection("users") //fb will automatically create collection/doc for us
+              .doc(user.uid)
+              .set(user, { merge: true }) // merge adds safety
+          } else {
+            setUser(null)
+          }
         })
-        setDocs(docs)
-      })
-      if (firebaseUser) {
-        const user = {
-          displayName: firebaseUser.displayName,
-          photoUrl: firebaseUser.photoURL,
-          uid: firebaseUser.uid,
-        }
-        setUser(user)
-        db.collection("users") //fb will automatically create collection/doc for us
-          .doc(user.uid)
-          .set(user, { merge: true }) // merge adds safety
-      } else {
-        setUser(null)
-      }
-    })
+    }
   }, [])
   return [user, docs]
 }
